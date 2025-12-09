@@ -12,10 +12,16 @@ export default function PlayerView() {
     updatePlayerPreferences,
     submitWriting,
     revealWriterName,
+    updatePlayerName,
+    removePlayer,
   } = useGame();
 
   const [playerName, setPlayerName] = useState('');
   const [isJoining, setIsJoining] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
   const [localPreferences, setLocalPreferences] = useState<string[]>([]);
   const [localAvoids, setLocalAvoids] = useState<string[]>([]);
   const [submissions, setSubmissions] = useState<Record<string, { impression: string; reality: string }>>({});
@@ -56,6 +62,22 @@ export default function PlayerView() {
       alert('Failed to join. Please try again.');
     } finally {
       setIsJoining(false);
+    }
+  };
+
+  const handleUpdateName = async () => {
+    if (!newName.trim() || !currentUserId) return;
+    
+    setIsUpdatingName(true);
+    try {
+      await updatePlayerName(currentUserId, newName.trim());
+      setIsEditingName(false);
+      setNewName('');
+    } catch (err: any) {
+      console.error('Error updating name:', err);
+      alert(err.message || 'Failed to update name');
+    } finally {
+      setIsUpdatingName(false);
     }
   };
 
@@ -162,11 +184,23 @@ export default function PlayerView() {
     // console.log('LOBBY State:', { currentUserId, hasJoined, playerNameFromFirestore, playersCount: players.length });
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-green-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border-4 border-red-200">
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-green-50 flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Decorative Christmas elements */}
+        <div className="absolute top-10 left-10 text-4xl animate-float">❄️</div>
+        <div className="absolute top-20 right-20 text-3xl animate-float" style={{ animationDelay: '1s' }}>🎄</div>
+        <div className="absolute bottom-20 left-20 text-3xl animate-float" style={{ animationDelay: '2s' }}>⭐</div>
+        <div className="absolute bottom-10 right-10 text-4xl animate-float" style={{ animationDelay: '0.5s' }}>🎁</div>
+        
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 border-4 border-red-300 relative z-10" style={{
+          background: 'linear-gradient(135deg, #ffffff 0%, #fef2f2 100%)',
+          boxShadow: '0 20px 60px rgba(220, 38, 38, 0.3)',
+        }}>
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-red-600 mb-2">🎄 Reflections</h1>
-            <p className="text-gray-600">Join the Christmas gathering</p>
+            <div className="text-6xl mb-4 animate-sparkle">🎄</div>
+            <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-red-600 via-red-500 to-green-600 bg-clip-text text-transparent">
+              Reflections
+            </h1>
+            <p className="text-lg text-gray-700 font-medium">✨ Join the Christmas gathering ✨</p>
           </div>
           
           {showJoinForm ? (
@@ -176,30 +210,109 @@ export default function PlayerView() {
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleJoin()}
-                placeholder="Enter your name"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-red-500 focus:outline-none text-lg"
+                placeholder="🎅 Enter your name"
+                className="w-full px-4 py-3 border-3 border-red-300 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-200 focus:outline-none text-lg shadow-inner"
                 disabled={isJoining}
               />
               <button
                 onClick={handleJoin}
                 disabled={!playerName.trim() || isJoining}
-                className="w-full mt-4 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full mt-4 bg-gradient-to-r from-red-600 to-red-700 text-white py-4 rounded-xl font-bold text-lg hover:from-red-700 hover:to-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 shadow-lg"
               >
-                {isJoining ? 'Joining...' : 'Join Game'}
+                {isJoining ? '⏳ Joining...' : '🎄 Join Game'}
               </button>
             </div>
           ) : (
             <div className="text-center">
-              <p className="text-lg text-gray-700 mb-4">
-                Welcome, <span className="font-bold text-red-600">{currentPlayer?.data.name || 'Player'}</span>!
-              </p>
-              <p className="text-gray-600">Waiting for host to start...</p>
+              <div className="text-5xl mb-4">🎉</div>
+              {!isEditingName ? (
+                <>
+                  <p className="text-xl text-gray-800 mb-2 font-semibold">
+                    Welcome, <span className="font-bold text-red-600 text-2xl">{currentPlayer?.data.name || 'Player'}</span>! 🎄
+                  </p>
+                  <div className="flex gap-2 justify-center mb-4">
+                    <button
+                      onClick={() => {
+                        setNewName(currentPlayer?.data.name || '');
+                        setIsEditingName(true);
+                      }}
+                      className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-105 shadow-lg text-sm"
+                    >
+                      ✏️ Change Name
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!currentUserId) return;
+                        if (!confirm('Are you sure you want to leave the game? This action cannot be undone.')) {
+                          return;
+                        }
+                        setIsLeaving(true);
+                        try {
+                          await removePlayer(currentUserId);
+                          // After leaving, the player document is deleted, so the UI will reset
+                          // The user will need to refresh or rejoin
+                          window.location.reload();
+                        } catch (err: any) {
+                          alert(err.message || 'Failed to leave game');
+                          setIsLeaving(false);
+                        }
+                      }}
+                      disabled={isLeaving}
+                      className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all transform hover:scale-105 shadow-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLeaving ? '⏳ Leaving...' : '🚪 Leave Game'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="mb-4">
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && newName.trim()) {
+                        handleUpdateName();
+                      } else if (e.key === 'Escape') {
+                        setIsEditingName(false);
+                        setNewName('');
+                      }
+                    }}
+                    placeholder="Enter new name"
+                    className="w-full px-4 py-3 border-3 border-red-300 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-200 focus:outline-none text-lg shadow-inner mb-3"
+                    autoFocus
+                    disabled={isUpdatingName}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleUpdateName}
+                      disabled={!newName.trim() || isUpdatingName}
+                      className="flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white py-2 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 shadow-lg"
+                    >
+                      {isUpdatingName ? '⏳ Saving...' : '✅ Save'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditingName(false);
+                        setNewName('');
+                      }}
+                      disabled={isUpdatingName}
+                      className="flex-1 bg-gradient-to-r from-gray-600 to-gray-700 text-white py-2 rounded-xl font-semibold hover:from-gray-700 hover:to-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 shadow-lg"
+                    >
+                      ❌ Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+              <p className="text-gray-600 mb-6">⏰ Waiting for host to start...</p>
               <div className="mt-6">
-                <p className="text-sm text-gray-500 mb-2">Players in lobby:</p>
+                <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center justify-center gap-2">
+                  <span>👥</span> Players in lobby ({players.length})
+                </p>
                 <div className="space-y-2">
                   {players.map(p => (
-                    <div key={p.uid} className="bg-red-50 px-4 py-2 rounded-lg">
-                      {p.data.name}
+                    <div key={p.uid} className="bg-gradient-to-r from-red-50 to-green-50 px-4 py-3 rounded-xl border-2 border-red-200 shadow-md">
+                      <span className="text-lg font-medium text-gray-800">🎅 {p.data.name}</span>
                     </div>
                   ))}
                 </div>
@@ -214,15 +327,24 @@ export default function PlayerView() {
   // PREFERENCES Phase
   if (gameData?.status === 'PREFERENCES') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-green-50 p-4 py-8">
-        <div className="max-w-2xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-green-50 p-4 py-8 relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-5 left-5 text-3xl animate-float">🎄</div>
+        <div className="absolute top-10 right-10 text-2xl animate-float" style={{ animationDelay: '1.5s' }}>❄️</div>
+        <div className="absolute bottom-10 left-10 text-2xl animate-float" style={{ animationDelay: '2.5s' }}>🎁</div>
+        <div className="absolute bottom-5 right-5 text-3xl animate-float" style={{ animationDelay: '0.5s' }}>⭐</div>
+        
+        <div className="max-w-2xl mx-auto relative z-10">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-red-600 mb-2">Set Your Preferences</h1>
-            <p className="text-gray-600">Tell us who you know well and who you'd prefer not to write about</p>
+            <div className="text-5xl mb-3 animate-sparkle">🎅</div>
+            <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-red-600 via-red-500 to-green-600 bg-clip-text text-transparent">
+              Set Your Preferences
+            </h1>
+            <p className="text-lg text-gray-700 font-medium">✨ Tell us who you know well and who you'd prefer not to write about ✨</p>
           </div>
 
           {/* Show current counts and limits */}
-          <div className="mb-4 bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+          <div className="mb-6 bg-gradient-to-r from-blue-50 to-green-50 border-3 border-blue-300 rounded-2xl p-5 shadow-lg">
             <div className="flex justify-center gap-6 text-sm">
               <div className="text-center">
                 <span className="font-semibold text-gray-700">⭐ Favourites:</span>
@@ -247,7 +369,10 @@ export default function PlayerView() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-red-200">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 border-4 border-red-300" style={{
+            background: 'linear-gradient(135deg, #ffffff 0%, #fef2f2 100%)',
+            boxShadow: '0 20px 60px rgba(220, 38, 38, 0.2)',
+          }}>
             <div className="space-y-3">
               {otherPlayers.map(player => {
                 const isStarred = localPreferences.includes(player.uid);
@@ -260,26 +385,29 @@ export default function PlayerView() {
                 return (
                   <div
                     key={player.uid}
-                    className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
+                    className={`flex items-center justify-between p-5 rounded-xl border-3 transition-all shadow-md ${
                       isStarred
-                        ? 'bg-green-50 border-green-300'
+                        ? 'bg-gradient-to-r from-green-50 to-green-100 border-green-400'
                         : isBlocked
-                        ? 'bg-red-50 border-red-300'
-                        : 'bg-gray-50 border-gray-200'
+                        ? 'bg-gradient-to-r from-red-50 to-red-100 border-red-400'
+                        : 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-300'
                     }`}
                   >
-                    <span className="text-lg font-medium text-gray-800">{player.data.name}</span>
+                    <span className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                      <span className="text-2xl">🎅</span>
+                      {player.data.name}
+                    </span>
                     
-                    <div className="flex gap-2">
+                    <div className="flex gap-3">
                       <button
                         onClick={() => handleTogglePreference(player.uid)}
                         disabled={!canAddPreference && !isStarred}
-                        className={`p-2 rounded-lg transition-colors ${
+                        className={`p-3 rounded-xl transition-all transform hover:scale-110 ${
                           isStarred
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg'
                             : !canAddPreference
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-gray-200 text-gray-600 hover:bg-green-200'
+                            : 'bg-gray-200 text-gray-600 hover:bg-green-200 shadow-md'
                         }`}
                         title={
                           !canAddPreference && !isStarred
@@ -289,18 +417,18 @@ export default function PlayerView() {
                             : 'I know them well'
                         }
                       >
-                        <Star className={`w-5 h-5 ${isStarred ? 'fill-current' : ''}`} />
+                        <Star className={`w-6 h-6 ${isStarred ? 'fill-current' : ''}`} />
                       </button>
                       
                       <button
                         onClick={() => handleToggleAvoid(player.uid)}
                         disabled={!canAddAvoid && !isBlocked}
-                        className={`p-2 rounded-lg transition-colors ${
+                        className={`p-3 rounded-xl transition-all transform hover:scale-110 ${
                           isBlocked
-                            ? 'bg-red-500 text-white'
+                            ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg'
                             : !canAddAvoid
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-gray-200 text-gray-600 hover:bg-red-200'
+                            : 'bg-gray-200 text-gray-600 hover:bg-red-200 shadow-md'
                         }`}
                         title={
                           !canAddAvoid && !isBlocked
@@ -310,7 +438,7 @@ export default function PlayerView() {
                             : "I'd rather not write about them"
                         }
                       >
-                        <X className="w-5 h-5" />
+                        <X className="w-6 h-6" />
                       </button>
                     </div>
                   </div>
@@ -319,13 +447,38 @@ export default function PlayerView() {
             </div>
 
             {otherPlayers.length === 0 && (
-              <p className="text-center text-gray-500 py-8">No other players yet</p>
+              <p className="text-center text-gray-500 py-8 text-lg">⏳ No other players yet</p>
             )}
           </div>
 
-          <div className="mt-6 text-center text-sm text-gray-600">
-            <p>⭐ Green = I know them well</p>
-            <p>❌ Red = I'd rather not write about them</p>
+          <div className="mt-6 text-center text-base text-gray-700 bg-white/80 rounded-xl p-4 border-2 border-red-200 shadow-md">
+            <p className="font-semibold mb-2">💡 How it works:</p>
+            <p className="text-green-700">⭐ Green = I know them well</p>
+            <p className="text-red-700">❌ Red = I'd rather not write about them</p>
+          </div>
+
+          {/* Leave Game Button */}
+          <div className="mt-6">
+            <button
+              onClick={async () => {
+                if (!currentUserId) return;
+                if (!confirm('Are you sure you want to leave the game? This action cannot be undone.')) {
+                  return;
+                }
+                setIsLeaving(true);
+                try {
+                  await removePlayer(currentUserId);
+                  window.location.reload();
+                } catch (err: any) {
+                  alert(err.message || 'Failed to leave game');
+                  setIsLeaving(false);
+                }
+              }}
+              disabled={isLeaving}
+              className="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLeaving ? '⏳ Leaving...' : '🚪 Leave Game'}
+            </button>
           </div>
         </div>
       </div>
@@ -338,10 +491,17 @@ export default function PlayerView() {
     
     if (assignments.length === 0) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 to-green-50 flex items-center justify-center p-4">
-          <div className="text-center">
-            <Sparkles className="w-12 h-12 text-red-500 mx-auto animate-pulse" />
-            <p className="mt-4 text-gray-700">Waiting for assignments...</p>
+        <div className="min-h-screen bg-gradient-to-br from-red-50 to-green-50 flex items-center justify-center p-4 relative overflow-hidden">
+          {/* Decorative elements */}
+          <div className="absolute top-10 left-10 text-4xl animate-float">❄️</div>
+          <div className="absolute top-20 right-20 text-3xl animate-float" style={{ animationDelay: '1s' }}>🎄</div>
+          <div className="absolute bottom-20 left-20 text-3xl animate-float" style={{ animationDelay: '2s' }}>⭐</div>
+          <div className="absolute bottom-10 right-10 text-4xl animate-float" style={{ animationDelay: '0.5s' }}>🎁</div>
+          
+          <div className="text-center relative z-10">
+            <div className="text-7xl mb-4 animate-sparkle">⏳</div>
+            <Sparkles className="w-16 h-16 text-red-500 mx-auto animate-pulse" />
+            <p className="mt-4 text-xl text-gray-700 font-semibold">Waiting for assignments...</p>
           </div>
         </div>
       );
@@ -364,21 +524,27 @@ export default function PlayerView() {
               return (
                 <div
                   key={targetId}
-                  className="bg-white rounded-xl shadow-lg p-6 border-2 border-red-200"
+                  className="bg-white rounded-2xl shadow-2xl p-6 border-4 border-red-300 mb-6" style={{
+                    background: 'linear-gradient(135deg, #ffffff 0%, #fef2f2 100%)',
+                    boxShadow: '0 20px 60px rgba(220, 38, 38, 0.2)',
+                  }}
                 >
-                  <h3 className="text-2xl font-bold text-gray-800 mb-6">
+                  <h3 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                    <span className="text-3xl">🎅</span>
                     About {targetPlayer?.data.name || 'Unknown'}
                   </h3>
 
                   {isSubmitted ? (
-                    <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
-                      <p className="text-green-700 font-semibold">✓ Submitted!</p>
+                    <div className="bg-gradient-to-r from-green-50 to-green-100 border-3 border-green-400 rounded-xl p-5 shadow-lg">
+                      <p className="text-green-700 font-bold text-lg flex items-center justify-center gap-2">
+                        <span className="text-2xl">✅</span> Submitted!
+                      </p>
                     </div>
                   ) : (
                     <>
-                      <div className="mb-4">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          First Impression
+                      <div className="mb-5">
+                        <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                          <span>💭</span> First Impression
                         </label>
                         <textarea
                           value={submission.impression}
@@ -388,15 +554,15 @@ export default function PlayerView() {
                               [targetId]: { ...submission, impression: e.target.value },
                             })
                           }
-                          placeholder="What was your first impression of this person?"
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-red-500 focus:outline-none resize-none"
+                          placeholder="🎄 What was your first impression of this person?"
+                          className="w-full px-4 py-3 border-3 border-red-300 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-200 focus:outline-none resize-none shadow-inner"
                           rows={4}
                         />
                       </div>
 
-                      <div className="mb-4">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Reality
+                      <div className="mb-5">
+                        <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                          <span>🌟</span> Reality
                         </label>
                         <textarea
                           value={submission.reality}
@@ -406,17 +572,17 @@ export default function PlayerView() {
                               [targetId]: { ...submission, reality: e.target.value },
                             })
                           }
-                          placeholder="What is the reality of your relationship?"
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-red-500 focus:outline-none resize-none"
+                          placeholder="🎁 What is the reality of your relationship?"
+                          className="w-full px-4 py-3 border-3 border-red-300 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-200 focus:outline-none resize-none shadow-inner"
                           rows={4}
                         />
                       </div>
 
                       <button
                         onClick={() => handleSubmitWriting(targetId)}
-                        className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                        className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-4 rounded-xl font-bold text-lg hover:from-red-700 hover:to-red-800 transition-all transform hover:scale-105 shadow-lg"
                       >
-                        Submit
+                        🎄 Submit Reflection
                       </button>
                     </>
                   )}
@@ -443,17 +609,27 @@ export default function PlayerView() {
       );
 
       return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 to-green-50 p-4 py-8">
-          <div className="max-w-3xl mx-auto">
+        <div className="min-h-screen bg-gradient-to-br from-red-50 to-green-50 p-4 py-8 relative overflow-hidden">
+          {/* Decorative elements */}
+          <div className="absolute top-5 left-5 text-4xl animate-float">🎁</div>
+          <div className="absolute top-10 right-10 text-3xl animate-float" style={{ animationDelay: '1s' }}>✨</div>
+          <div className="absolute bottom-10 left-10 text-3xl animate-float" style={{ animationDelay: '2s' }}>🎄</div>
+          <div className="absolute bottom-5 right-5 text-4xl animate-float" style={{ animationDelay: '0.5s' }}>⭐</div>
+          
+          <div className="max-w-3xl mx-auto relative z-10">
             <div className="text-center mb-8">
-              <Sparkles className="w-16 h-16 text-red-500 mx-auto animate-pulse mb-4" />
-              <h1 className="text-4xl font-bold text-red-600 mb-2">Your Reflections!</h1>
-              <p className="text-xl text-gray-700">Here's what people wrote about you</p>
+              <div className="text-7xl mb-4 animate-sparkle">🎉</div>
+              <h1 className="text-5xl md:text-6xl font-bold mb-3 bg-gradient-to-r from-red-600 via-red-500 to-green-600 bg-clip-text text-transparent">
+                Your Reflections!
+              </h1>
+              <p className="text-xl text-gray-700 font-medium">✨ Here's what people wrote about you ✨</p>
             </div>
 
             {writers.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-lg p-8 border-2 border-red-200 text-center">
-                <p className="text-gray-600">No reflections yet...</p>
+              <div className="bg-white rounded-2xl shadow-2xl p-8 border-4 border-red-300 text-center" style={{
+                background: 'linear-gradient(135deg, #ffffff 0%, #fef2f2 100%)',
+              }}>
+                <p className="text-gray-600 text-lg">⏳ No reflections yet...</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -466,10 +642,14 @@ export default function PlayerView() {
                   return (
                     <div
                       key={writer.uid}
-                      className="bg-white rounded-xl shadow-lg p-6 border-2 border-red-200"
+                      className="bg-white rounded-2xl shadow-2xl p-6 border-4 border-red-300" style={{
+                        background: 'linear-gradient(135deg, #ffffff 0%, #fef2f2 100%)',
+                        boxShadow: '0 20px 60px rgba(220, 38, 38, 0.2)',
+                      }}
                     >
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-bold text-gray-800">
+                      <div className="flex items-center justify-between mb-5">
+                        <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                          <span className="text-3xl">🎅</span>
                           From {isRevealed ? writer.data.name : 'Anonymous'}
                         </h3>
                         {isCurrentWriter && !isRevealed && (
@@ -478,33 +658,33 @@ export default function PlayerView() {
                               console.error('Error revealing name:', err);
                               alert('Failed to reveal name');
                             })}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-semibold"
+                            className="px-5 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105 text-sm font-bold shadow-lg"
                           >
-                            Reveal My Name
+                            ✨ Reveal My Name
                           </button>
                         )}
                         {isCurrentWriter && isRevealed && (
-                          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-semibold">
-                            ✓ Revealed
+                          <span className="px-4 py-2 bg-gradient-to-r from-green-100 to-green-200 text-green-700 rounded-xl text-sm font-bold border-2 border-green-300">
+                            ✅ Revealed
                           </span>
                         )}
                       </div>
                       
                       <div className="space-y-4">
                         <div>
-                          <h4 className="text-sm font-semibold text-gray-600 mb-2">
-                            First Impression
+                          <h4 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                            <span>💭</span> First Impression
                           </h4>
-                          <p className="text-gray-800 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <p className="text-gray-800 bg-gradient-to-r from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 shadow-inner text-lg">
                             {submission.impression}
                           </p>
                         </div>
                         
                         <div>
-                          <h4 className="text-sm font-semibold text-gray-600 mb-2">
-                            Reality
+                          <h4 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                            <span>🌟</span> Reality
                           </h4>
-                          <p className="text-gray-800 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <p className="text-gray-800 bg-gradient-to-r from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 shadow-inner text-lg">
                             {submission.reality}
                           </p>
                         </div>
@@ -537,8 +717,10 @@ export default function PlayerView() {
             </div>
 
             {writers.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-lg p-8 border-2 border-red-200 text-center">
-                <p className="text-gray-600">No reflections yet...</p>
+              <div className="bg-white rounded-2xl shadow-2xl p-8 border-4 border-red-300 text-center" style={{
+                background: 'linear-gradient(135deg, #ffffff 0%, #fef2f2 100%)',
+              }}>
+                <p className="text-gray-600 text-lg">⏳ No reflections yet...</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -550,10 +732,14 @@ export default function PlayerView() {
                   return (
                     <div
                       key={writer.uid}
-                      className="bg-white rounded-xl shadow-lg p-6 border-2 border-red-200"
+                      className="bg-white rounded-2xl shadow-2xl p-6 border-4 border-red-300" style={{
+                        background: 'linear-gradient(135deg, #ffffff 0%, #fef2f2 100%)',
+                        boxShadow: '0 20px 60px rgba(220, 38, 38, 0.2)',
+                      }}
                     >
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-bold text-gray-800">
+                      <div className="flex items-center justify-between mb-5">
+                        <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                          <span className="text-3xl">🎅</span>
                           From {isRevealed ? writer.data.name : 'Anonymous'}
                         </h3>
                         {isCurrentWriter && !isRevealed && (
@@ -562,33 +748,33 @@ export default function PlayerView() {
                               console.error('Error revealing name:', err);
                               alert('Failed to reveal name');
                             })}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-semibold"
+                            className="px-5 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105 text-sm font-bold shadow-lg"
                           >
-                            Reveal My Name
+                            ✨ Reveal My Name
                           </button>
                         )}
                         {isCurrentWriter && isRevealed && (
-                          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-semibold">
-                            ✓ Revealed
+                          <span className="px-4 py-2 bg-gradient-to-r from-green-100 to-green-200 text-green-700 rounded-xl text-sm font-bold border-2 border-green-300">
+                            ✅ Revealed
                           </span>
                         )}
                       </div>
                       
                       <div className="space-y-4">
                         <div>
-                          <h4 className="text-sm font-semibold text-gray-600 mb-2">
-                            First Impression
+                          <h4 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                            <span>💭</span> First Impression
                           </h4>
-                          <p className="text-gray-800 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <p className="text-gray-800 bg-gradient-to-r from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 shadow-inner text-lg">
                             {submission.impression}
                           </p>
                         </div>
                         
                         <div>
-                          <h4 className="text-sm font-semibold text-gray-600 mb-2">
-                            Reality
+                          <h4 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                            <span>🌟</span> Reality
                           </h4>
-                          <p className="text-gray-800 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <p className="text-gray-800 bg-gradient-to-r from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 shadow-inner text-lg">
                             {submission.reality}
                           </p>
                         </div>
@@ -604,11 +790,19 @@ export default function PlayerView() {
     }
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-green-50 flex items-center justify-center p-4">
-        <div className="text-center max-w-md">
-          <Sparkles className="w-12 h-12 text-red-500 mx-auto animate-pulse mb-4" />
-          <h1 className="text-3xl font-bold text-red-600 mb-4">Stay Tuned</h1>
-          <p className="text-gray-700">Waiting for the next reveal...</p>
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-green-50 flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-10 left-10 text-4xl animate-float">❄️</div>
+        <div className="absolute top-20 right-20 text-3xl animate-float" style={{ animationDelay: '1s' }}>🎄</div>
+        <div className="absolute bottom-20 left-20 text-3xl animate-float" style={{ animationDelay: '2s' }}>⭐</div>
+        <div className="absolute bottom-10 right-10 text-4xl animate-float" style={{ animationDelay: '0.5s' }}>🎁</div>
+        
+        <div className="text-center max-w-md relative z-10">
+          <div className="text-7xl mb-6 animate-sparkle">⏰</div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-red-600 via-red-500 to-green-600 bg-clip-text text-transparent">
+            Stay Tuned
+          </h1>
+          <p className="text-xl text-gray-700 font-medium">✨ Waiting for the next reveal... ✨</p>
         </div>
       </div>
     );

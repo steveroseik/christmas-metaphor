@@ -15,6 +15,8 @@ export default function AdminView() {
     writeAssignments,
     resetGame,
     setCurrentReveal,
+    kickPlayer,
+    resetAssignments,
   } = useGame();
 
   const [targetsPerPlayer, setTargetsPerPlayer] = useState(
@@ -28,6 +30,8 @@ export default function AdminView() {
   );
   const [isRunningMatchmaking, setIsRunningMatchmaking] = useState(false);
   const [matchmakingError, setMatchmakingError] = useState<React.ReactNode | null>(null);
+  const [kickingPlayerId, setKickingPlayerId] = useState<string | null>(null);
+  const [isResettingAssignments, setIsResettingAssignments] = useState(false);
 
   // Update local state when gameData changes
   useEffect(() => {
@@ -208,36 +212,54 @@ export default function AdminView() {
   const currentStatus = gameData?.status || 'LOBBY';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-green-50 p-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-xl shadow-xl p-8 border-4 border-red-300">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-green-50 p-4 py-8 relative overflow-hidden">
+      {/* Decorative elements */}
+      <div className="absolute top-5 left-5 text-4xl animate-float">🎄</div>
+      <div className="absolute top-10 right-10 text-3xl animate-float" style={{ animationDelay: '1s' }}>🎁</div>
+      <div className="absolute bottom-10 left-10 text-3xl animate-float" style={{ animationDelay: '2s' }}>⭐</div>
+      <div className="absolute bottom-5 right-5 text-4xl animate-float" style={{ animationDelay: '0.5s' }}>❄️</div>
+      
+      <div className="max-w-4xl mx-auto relative z-10">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 border-4 border-red-300" style={{
+          background: 'linear-gradient(135deg, #ffffff 0%, #fef2f2 100%)',
+          boxShadow: '0 20px 60px rgba(220, 38, 38, 0.3)',
+        }}>
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-red-600 mb-2">🎄 Admin Panel</h1>
-            <p className="text-gray-600">Control the Reflections game</p>
+            <div className="text-6xl mb-4 animate-sparkle">🎅</div>
+            <h1 className="text-5xl md:text-6xl font-bold mb-3 bg-gradient-to-r from-red-600 via-red-500 to-green-600 bg-clip-text text-transparent">
+              Admin Panel
+            </h1>
+            <p className="text-lg text-gray-700 font-medium mb-4">✨ Control the Reflections game ✨</p>
             <div className="mt-4">
-              <span className="inline-block px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold">
-                Status: {currentStatus}
+              <span className="inline-block px-6 py-3 bg-gradient-to-r from-red-100 to-green-100 text-red-700 rounded-xl font-bold text-lg border-3 border-red-300 shadow-md">
+                🎯 Status: {currentStatus}
               </span>
             </div>
           </div>
 
           {/* Optimal Config Calculator */}
           {players.length > 0 && (
-            <div className="border-2 border-blue-200 rounded-lg p-6 bg-blue-50 mb-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">📊 Optimal Config Calculator</h2>
+            <div className="border-4 border-blue-300 rounded-2xl p-6 bg-gradient-to-r from-blue-50 to-green-50 mb-6 shadow-lg">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <span className="text-3xl">📊</span> Optimal Config Calculator
+              </h2>
               {(() => {
                 const optimal = calculateOptimalConfig(players.length, targetsPerPlayer);
                 return (
                   <div className="space-y-4">
-                    <div className="bg-white rounded-lg p-4 border border-blue-200">
+                    <div className="bg-white rounded-xl p-5 border-3 border-blue-300 shadow-md">
                       <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">Suggested Max Preferences:</p>
-                          <p className="text-2xl font-bold text-blue-600">{optimal.maxPreferences}</p>
+                        <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-xl border-2 border-green-300">
+                          <p className="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-2">
+                            <span>⭐</span> Suggested Max Preferences:
+                          </p>
+                          <p className="text-3xl font-bold text-green-700">{optimal.maxPreferences}</p>
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">Suggested Max Avoids:</p>
-                          <p className="text-2xl font-bold text-blue-600">{optimal.maxAvoids}</p>
+                        <div className="bg-gradient-to-r from-red-50 to-red-100 p-4 rounded-xl border-2 border-red-300">
+                          <p className="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-2">
+                            <span>❌</span> Suggested Max Avoids:
+                          </p>
+                          <p className="text-3xl font-bold text-red-700">{optimal.maxAvoids}</p>
                         </div>
                       </div>
                       <button
@@ -245,14 +267,16 @@ export default function AdminView() {
                           setMaxPreferences(optimal.maxPreferences);
                           setMaxAvoids(optimal.maxAvoids);
                         }}
-                        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                        className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-105 font-bold shadow-lg"
                       >
-                        Apply Suggested Values
+                        ✨ Apply Suggested Values
                       </button>
                     </div>
-                    <div className="bg-white rounded-lg p-4 border border-blue-200">
-                      <p className="text-sm font-semibold text-gray-700 mb-2">Calculation Reasoning:</p>
-                      <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                    <div className="bg-white rounded-xl p-5 border-3 border-blue-300 shadow-md">
+                      <p className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                        <span>💡</span> Calculation Reasoning:
+                      </p>
+                      <ul className="text-sm text-gray-600 space-y-2 list-disc list-inside">
                         {optimal.reasoning.map((reason, index) => (
                           <li key={index}>{reason}</li>
                         ))}
@@ -267,8 +291,37 @@ export default function AdminView() {
           {/* Game Controls */}
           <div className="space-y-6">
             {/* Reset & Config */}
-            <div className="border-2 border-gray-200 rounded-lg p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Game Controls</h2>
+            <div className="border-4 border-red-300 rounded-2xl p-6 bg-gradient-to-r from-white to-red-50 shadow-lg">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <span className="text-3xl">🎮</span> Game Controls
+              </h2>
+
+              {/* Reset Assignments Button */}
+              {(currentStatus === 'WRITING' || currentStatus === 'REVEAL') && (
+                <div className="mb-4">
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Are you sure you want to reset all assignments? This will clear all writing assignments AND all submitted writings (impressions and realities). Players will remain in the game, but they will need to write again.')) {
+                        return;
+                      }
+                      setIsResettingAssignments(true);
+                      try {
+                        await resetAssignments();
+                        alert('Assignments and all submitted writings have been reset successfully!');
+                      } catch (err: any) {
+                        console.error('Error resetting assignments:', err);
+                        alert(err.message || 'Failed to reset assignments');
+                      } finally {
+                        setIsResettingAssignments(false);
+                      }
+                    }}
+                    disabled={isResettingAssignments}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-xl font-bold hover:from-yellow-700 hover:to-yellow-800 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none mb-4"
+                  >
+                    {isResettingAssignments ? '⏳ Resetting...' : '🔄 Reset Assignments & Writings'}
+                  </button>
+                </div>
+              )}
               
               <div className="space-y-4">
                 <div className="space-y-3">
@@ -280,7 +333,7 @@ export default function AdminView() {
                       max="10"
                       value={targetsPerPlayer}
                       onChange={(e) => setTargetsPerPlayer(parseInt(e.target.value) || 2)}
-                      className="w-20 px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-red-500 focus:outline-none"
+                      className="w-20 px-3 py-2 border-3 border-red-300 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-200 focus:outline-none shadow-inner"
                     />
                   </div>
                   
@@ -292,7 +345,7 @@ export default function AdminView() {
                       max="50"
                       value={maxPreferences}
                       onChange={(e) => setMaxPreferences(parseInt(e.target.value) || 1)}
-                      className="w-20 px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-red-500 focus:outline-none"
+                      className="w-20 px-3 py-2 border-3 border-red-300 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-200 focus:outline-none shadow-inner"
                     />
                     <span className="text-sm text-gray-600">Max favourites per player</span>
                   </div>
@@ -305,14 +358,14 @@ export default function AdminView() {
                       max="50"
                       value={maxAvoids}
                       onChange={(e) => setMaxAvoids(parseInt(e.target.value) || 1)}
-                      className="w-20 px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-red-500 focus:outline-none"
+                      className="w-20 px-3 py-2 border-3 border-red-300 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-200 focus:outline-none shadow-inner"
                     />
                     <span className="text-sm text-gray-600">Max dislikes per player</span>
                   </div>
                   
                   <button
                     onClick={handleUpdateConfig}
-                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-105 font-bold shadow-lg"
                   >
                     Update Config
                   </button>
@@ -320,7 +373,7 @@ export default function AdminView() {
 
                 <button
                   onClick={handleResetGame}
-                  className="w-full px-4 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                  className="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-bold hover:from-red-700 hover:to-red-800 transition-all transform hover:scale-105 shadow-lg"
                 >
                   Reset Game
                 </button>
@@ -336,7 +389,7 @@ export default function AdminView() {
                 {currentStatus !== 'LOBBY' && (
                   <button
                     onClick={handleGoBackPhase}
-                    className="w-full px-4 py-3 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl font-bold hover:from-gray-700 hover:to-gray-800 transition-all transform hover:scale-105 shadow-lg"
                   >
                     ← Go Back to Previous Phase
                   </button>
@@ -345,7 +398,7 @@ export default function AdminView() {
                 {currentStatus === 'LOBBY' && (
                   <button
                     onClick={handleStartPreferences}
-                    className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-bold hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105 shadow-lg"
                   >
                     Start Preferences Phase
                   </button>
@@ -356,13 +409,17 @@ export default function AdminView() {
                     <button
                       onClick={handleRunMatchmaking}
                       disabled={isRunningMatchmaking}
-                      className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-bold hover:from-purple-700 hover:to-purple-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 shadow-lg disabled:transform-none"
                     >
                       {isRunningMatchmaking ? 'Running Matchmaking...' : 'Run Matchmaking'}
                     </button>
                     {matchmakingError && (
-                      <div className="bg-red-100 border-2 border-red-300 rounded-lg p-4 text-red-700">
-                        {matchmakingError}
+                      <div className="bg-gradient-to-r from-red-100 to-red-200 border-4 border-red-400 rounded-xl p-5 text-red-800 shadow-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">⚠️</span>
+                          <p className="font-bold text-lg">Matchmaking Conflict</p>
+                        </div>
+                        <div className="text-sm">{matchmakingError}</div>
                       </div>
                     )}
                   </div>
@@ -371,7 +428,7 @@ export default function AdminView() {
                 {currentStatus === 'WRITING' && (
                   <button
                     onClick={handleStartReveal}
-                    className="w-full px-4 py-3 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 transition-colors"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-xl font-bold hover:from-orange-700 hover:to-orange-800 transition-all transform hover:scale-105 shadow-lg"
                   >
                     Start Reveal Phase
                   </button>
@@ -380,39 +437,65 @@ export default function AdminView() {
             </div>
 
             {/* Players List */}
-            <div className="border-2 border-gray-200 rounded-lg p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">
-                Players ({players.length})
+            <div className="border-4 border-green-300 rounded-2xl p-6 bg-gradient-to-r from-white to-green-50 shadow-lg">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <span className="text-3xl">👥</span> Players ({players.length})
               </h2>
               
               {players.length === 0 ? (
-                <p className="text-gray-500">No players yet</p>
+                <p className="text-gray-500 text-lg">⏳ No players yet</p>
               ) : (
                 <div className="space-y-3">
                   {players.map((player) => (
                     <div
                       key={player.uid}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-2 border-gray-200"
+                      className="flex items-center justify-between p-5 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border-3 border-gray-300 shadow-md"
                     >
                       <div className="flex-1">
-                        <p className="font-semibold text-gray-800">{player.data.name}</p>
-                        <div className="text-sm text-gray-600 mt-1">
-                          <span>⭐ {player.data.preferences.length} preferences</span>
-                          <span className="ml-4">❌ {player.data.avoids.length} avoids</span>
+                        <p className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                          <span className="text-2xl">🎅</span>
+                          {player.data.name}
+                        </p>
+                        <div className="text-sm text-gray-700 mt-2 font-semibold">
+                          <span className="bg-green-100 px-3 py-1 rounded-lg border-2 border-green-300">⭐ {player.data.preferences.length} preferences</span>
+                          <span className="ml-3 bg-red-100 px-3 py-1 rounded-lg border-2 border-red-300">❌ {player.data.avoids.length} avoids</span>
                           {player.data.assignments.length > 0 && (
-                            <span className="ml-4">📝 {player.data.assignments.length} assignments</span>
+                            <span className="ml-3 bg-blue-100 px-3 py-1 rounded-lg border-2 border-blue-300">📝 {player.data.assignments.length} assignments</span>
                           )}
                         </div>
                       </div>
                       
-                      {currentStatus === 'REVEAL' && (
+                      <div className="flex gap-2">
+                        {currentStatus === 'REVEAL' && (
+                          <button
+                            onClick={() => handleRevealPlayer(player.uid)}
+                            className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 transition-all transform hover:scale-105 font-bold shadow-lg"
+                          >
+                            Reveal
+                          </button>
+                        )}
                         <button
-                          onClick={() => handleRevealPlayer(player.uid)}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors ml-4"
+                          onClick={async () => {
+                            if (!confirm(`Are you sure you want to kick ${player.data.name}? This will remove them from the game and clean up all references.`)) {
+                              return;
+                            }
+                            setKickingPlayerId(player.uid);
+                            try {
+                              await kickPlayer(player.uid);
+                              alert(`${player.data.name} has been kicked from the game.`);
+                            } catch (err: any) {
+                              console.error('Error kicking player:', err);
+                              alert(err.message || 'Failed to kick player');
+                            } finally {
+                              setKickingPlayerId(null);
+                            }
+                          }}
+                          disabled={kickingPlayerId === player.uid}
+                          className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 transition-all transform hover:scale-105 font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                         >
-                          Reveal
+                          {kickingPlayerId === player.uid ? '⏳ Kicking...' : '🚪 Kick'}
                         </button>
-                      )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -422,7 +505,7 @@ export default function AdminView() {
                 <div className="mt-4">
                   <button
                     onClick={handleClearReveal}
-                    className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl font-bold hover:from-gray-700 hover:to-gray-800 transition-all transform hover:scale-105 shadow-lg"
                   >
                     Clear Current Reveal
                   </button>
@@ -432,8 +515,10 @@ export default function AdminView() {
 
             {/* Current Reveal Preview */}
             {currentStatus === 'REVEAL' && gameData?.currentRevealId && (
-              <div className="border-2 border-red-300 rounded-lg p-6 bg-red-50">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Current Reveal</h2>
+              <div className="border-4 border-red-300 rounded-2xl p-6 bg-gradient-to-r from-red-50 to-red-100 shadow-lg">
+                <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <span className="text-3xl">🎁</span> Current Reveal
+                </h2>
                 {(() => {
                   const revealedPlayer = players.find(p => p.uid === gameData.currentRevealId);
                   const writers = players.filter(p => 
@@ -442,32 +527,35 @@ export default function AdminView() {
                   );
 
                   if (!revealedPlayer) {
-                    return <p className="text-gray-600">Player not found</p>;
+                    return <p className="text-gray-600 text-lg">⏳ Player not found</p>;
                   }
 
                   return (
                     <div>
-                      <p className="text-lg font-semibold text-gray-800 mb-4">
-                        Showing reflections for: <span className="text-red-600">{revealedPlayer.data.name}</span>
+                      <p className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+                        <span>✨</span> Showing reflections for: <span className="text-red-700 text-2xl">{revealedPlayer.data.name}</span>
                       </p>
                       {writers.length === 0 ? (
-                        <p className="text-gray-600">No submissions yet</p>
+                        <p className="text-gray-600 text-lg">⏳ No submissions yet</p>
                       ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           {writers.map(writer => {
                             const submission = writer.data.submissions[gameData.currentRevealId!];
                             const isRevealed = submission.writerRevealed || false;
                             return (
-                              <div key={writer.uid} className="bg-white p-4 rounded-lg border border-gray-200">
-                                <p className="font-semibold text-gray-800 mb-2">
+                              <div key={writer.uid} className="bg-white p-5 rounded-xl border-3 border-gray-300 shadow-md">
+                                <p className="font-bold text-lg text-gray-800 mb-3 flex items-center gap-2">
+                                  <span className="text-2xl">🎅</span>
                                   From {isRevealed ? writer.data.name : 'Anonymous'}
                                 </p>
-                                <p className="text-sm text-gray-600 mb-1">
-                                  <strong>Impression:</strong> {submission.impression}
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                  <strong>Reality:</strong> {submission.reality}
-                                </p>
+                                <div className="space-y-2">
+                                  <p className="text-sm text-gray-700">
+                                    <strong className="text-gray-800">💭 Impression:</strong> {submission.impression}
+                                  </p>
+                                  <p className="text-sm text-gray-700">
+                                    <strong className="text-gray-800">🌟 Reality:</strong> {submission.reality}
+                                  </p>
+                                </div>
                               </div>
                             );
                           })}

@@ -359,6 +359,204 @@ export function useGame() {
     }
   };
 
+  // Update player name
+  const updatePlayerName = async (uid: string, newName: string) => {
+    if (!isFirebaseConfigured || !db) {
+      throw new Error('Firebase is not configured');
+    }
+    if (!newName.trim()) {
+      throw new Error('Name cannot be empty');
+    }
+    try {
+      const playerDocRef = doc(db, PLAYERS_COLLECTION, uid);
+      await updateDoc(playerDocRef, { name: newName.trim() });
+    } catch (err) {
+      console.error('Error updating player name:', err);
+      setError('Failed to update name');
+      throw err;
+    }
+  };
+
+  // Remove player and clean up all references
+  const removePlayer = async (playerIdToRemove: string) => {
+    if (!isFirebaseConfigured || !db) {
+      throw new Error('Firebase is not configured');
+    }
+    
+    // Only allow removal before matchmaking (LOBBY or PREFERENCES phases)
+    if (gameData?.status === 'WRITING' || gameData?.status === 'REVEAL') {
+      throw new Error('Cannot leave game after matchmaking has been completed');
+    }
+
+    try {
+      if (!db) {
+        throw new Error('Database not available');
+      }
+      
+      const batch = writeBatch(db);
+      
+      // Get all players to clean up references
+      const playersQuery = query(collection(db, PLAYERS_COLLECTION));
+      const snapshot = await getDocs(playersQuery);
+      
+      snapshot.forEach((playerDoc) => {
+        const playerData = playerDoc.data() as PlayerData;
+        const updates: Partial<PlayerData> = {};
+        let needsUpdate = false;
+
+        // Remove from preferences
+        if (playerData.preferences.includes(playerIdToRemove)) {
+          updates.preferences = playerData.preferences.filter(id => id !== playerIdToRemove);
+          needsUpdate = true;
+        }
+
+        // Remove from avoids
+        if (playerData.avoids.includes(playerIdToRemove)) {
+          updates.avoids = playerData.avoids.filter(id => id !== playerIdToRemove);
+          needsUpdate = true;
+        }
+
+        // Remove from assignments
+        if (playerData.assignments.includes(playerIdToRemove)) {
+          updates.assignments = playerData.assignments.filter(id => id !== playerIdToRemove);
+          needsUpdate = true;
+        }
+
+        // Remove from submissions (if this player wrote about the removed player)
+        if (playerData.submissions[playerIdToRemove]) {
+          const updatedSubmissions = { ...playerData.submissions };
+          delete updatedSubmissions[playerIdToRemove];
+          updates.submissions = updatedSubmissions;
+          needsUpdate = true;
+        }
+
+        // Update the player document if needed
+        if (needsUpdate && db) {
+          const playerDocRef = doc(db, PLAYERS_COLLECTION, playerDoc.id);
+          batch.update(playerDocRef, updates);
+        }
+      });
+
+      // Delete the player's own document
+      if (db) {
+        const playerDocRef = doc(db, PLAYERS_COLLECTION, playerIdToRemove);
+        batch.delete(playerDocRef);
+      }
+
+      await batch.commit();
+    } catch (err) {
+      console.error('Error removing player:', err);
+      setError('Failed to remove player');
+      throw err;
+    }
+  };
+
+  // Kick player (admin only - can be done at any time)
+  const kickPlayer = async (playerIdToKick: string) => {
+    if (!isFirebaseConfigured || !db) {
+      throw new Error('Firebase is not configured');
+    }
+
+    try {
+      if (!db) {
+        throw new Error('Database not available');
+      }
+      
+      const batch = writeBatch(db);
+      
+      // Get all players to clean up references
+      const playersQuery = query(collection(db, PLAYERS_COLLECTION));
+      const snapshot = await getDocs(playersQuery);
+      
+      snapshot.forEach((playerDoc) => {
+        const playerData = playerDoc.data() as PlayerData;
+        const updates: Partial<PlayerData> = {};
+        let needsUpdate = false;
+
+        // Remove from preferences
+        if (playerData.preferences.includes(playerIdToKick)) {
+          updates.preferences = playerData.preferences.filter(id => id !== playerIdToKick);
+          needsUpdate = true;
+        }
+
+        // Remove from avoids
+        if (playerData.avoids.includes(playerIdToKick)) {
+          updates.avoids = playerData.avoids.filter(id => id !== playerIdToKick);
+          needsUpdate = true;
+        }
+
+        // Remove from assignments
+        if (playerData.assignments.includes(playerIdToKick)) {
+          updates.assignments = playerData.assignments.filter(id => id !== playerIdToKick);
+          needsUpdate = true;
+        }
+
+        // Remove from submissions (if this player wrote about the kicked player)
+        if (playerData.submissions[playerIdToKick]) {
+          const updatedSubmissions = { ...playerData.submissions };
+          delete updatedSubmissions[playerIdToKick];
+          updates.submissions = updatedSubmissions;
+          needsUpdate = true;
+        }
+
+        // Update the player document if needed
+        if (needsUpdate && db) {
+          const playerDocRef = doc(db, PLAYERS_COLLECTION, playerDoc.id);
+          batch.update(playerDocRef, updates);
+        }
+      });
+
+      // Delete the player's own document
+      if (db) {
+        const playerDocRef = doc(db, PLAYERS_COLLECTION, playerIdToKick);
+        batch.delete(playerDocRef);
+      }
+
+      await batch.commit();
+    } catch (err) {
+      console.error('Error kicking player:', err);
+      setError('Failed to kick player');
+      throw err;
+    }
+  };
+
+  // Reset assignments (admin only - can be done at any time)
+  // This clears all assignments and all submitted writings for all players
+  const resetAssignments = async () => {
+    if (!isFirebaseConfigured || !db) {
+      throw new Error('Firebase is not configured');
+    }
+
+    try {
+      if (!db) {
+        throw new Error('Database not available');
+      }
+      
+      const batch = writeBatch(db);
+      
+      // Get all players
+      const playersQuery = query(collection(db, PLAYERS_COLLECTION));
+      const snapshot = await getDocs(playersQuery);
+      
+      // Clear assignments and all submitted writings (submissions) for all players
+      snapshot.forEach((playerDoc) => {
+        if (db) {
+          const playerDocRef = doc(db, PLAYERS_COLLECTION, playerDoc.id);
+          batch.update(playerDocRef, {
+            assignments: [], // Clear all writing assignments
+            submissions: {}, // Clear all submitted writings (impression and reality texts)
+          });
+        }
+      });
+
+      await batch.commit();
+    } catch (err) {
+      console.error('Error resetting assignments:', err);
+      setError('Failed to reset assignments');
+      throw err;
+    }
+  };
+
   return {
     gameData,
     players,
@@ -374,6 +572,10 @@ export function useGame() {
     revealWriterName,
     resetGame,
     setCurrentReveal,
+    updatePlayerName,
+    removePlayer,
+    kickPlayer,
+    resetAssignments,
   };
 }
 

@@ -5,6 +5,8 @@
 @layer base {
   body {
     @apply antialiased;
+    background: linear-gradient(135deg, #fef2f2 0%, #ffffff 50%, #f0fdf4 100%);
+    min-height: 100vh;
   }
 }
 
@@ -14,14 +16,32 @@
   }
   
   .christmas-card {
-    @apply bg-white rounded-xl shadow-lg border-2 border-red-200;
+    @apply bg-white rounded-2xl shadow-xl border-4 border-red-300;
+    background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
   }
   
   .christmas-button {
-    @apply px-4 py-3 rounded-lg font-semibold transition-colors;
+    @apply px-6 py-3 rounded-xl font-bold transition-all transform hover:scale-105 shadow-lg;
   }
   
   .christmas-button-primary {
-    @apply christmas-button bg-red-600 text-white hover:bg-red-700;
+    @apply christmas-button bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800;
+  }
+  
+  .christmas-button-secondary {
+    @apply christmas-button bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800;
+  }
+  
+  .christmas-title {
+    @apply text-4xl md:text-5xl font-bold bg-gradient-to-r from-red-600 via-red-500 to-green-600 bg-clip-text text-transparent;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .snowflake {
+    position: absolute;
+    color: white;
+    font-size: 1.5rem;
+    animation: float 6s ease-in-out infinite;
+    opacity: 0.7;
   }
 }
