@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // This matches any database (default or named "christmas-metaphor")
+    // Game document: christmas-metaphor/live_event
+    match /christmas-metaphor/live_event {
+      // Allow authenticated users to read the game document
+      allow read: if request.auth != null;
+      // Allow authenticated users to write (needed for admin matchmaking)
+      allow write: if request.auth != null;
+      
+      // Players subcollection: christmas-metaphor/live_event/players/{playerId}
+      match /players/{playerId} {
+        // Anyone authenticated can read all players
+        allow read: if request.auth != null;
+        
+        // Users can create their own player document
+        allow create: if request.auth != null && request.auth.uid == playerId;
+        
+        // Allow updates: users can update their own document OR any document
+        // (needed for admin matchmaking to set assignments on any player)
+        // Note: This is permissive for the Christmas party use case where admin
+        // runs matchmaking from client. For production, add stricter field-level checks.
+        allow update: if request.auth != null;
+        
+        // Allow deletion: users can delete their own document OR any document
+        // (needed for admin reset game functionality)
+        allow delete: if request.auth != null;
+      }
+    }
+  }
+}
+
