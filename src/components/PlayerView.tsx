@@ -139,8 +139,8 @@ export default function PlayerView() {
     if (!currentUserId) return;
     
     const submission = submissions[targetId];
-    if (!submission?.impression.trim() || !submission?.reality.trim()) {
-      alert('Please fill in both fields');
+    if (!submission?.reality.trim()) {
+      alert('Please fill in the "What you want to tell them" field');
       return;
     }
 
@@ -148,7 +148,7 @@ export default function PlayerView() {
       await submitWriting(
         currentUserId,
         targetId,
-        submission.impression.trim(),
+        submission.impression?.trim() || '', // Optional - can be empty
         submission.reality.trim()
       );
     } catch (err) {
@@ -511,8 +511,12 @@ export default function PlayerView() {
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-green-50 p-4 py-8">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-red-600 mb-2">Write Your Reflections</h1>
-            <p className="text-gray-600">Share your thoughts about each person</p>
+            <div className="text-5xl mb-3 animate-sparkle">✨</div>
+            <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-red-600 via-red-500 to-green-600 bg-clip-text text-transparent">
+              Write Your Reflections
+            </h1>
+            <p className="text-lg text-gray-700 font-medium">🎁 Share what you want to tell each person 🎁</p>
+            <p className="text-sm text-gray-600 mt-2">💡 Tip: The "First Impression" field is optional - you can skip it if you prefer</p>
           </div>
 
           <div className="space-y-6">
@@ -544,7 +548,7 @@ export default function PlayerView() {
                     <>
                       <div className="mb-5">
                         <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                          <span>💭</span> First Impression
+                          <span>💭</span> First Impression <span className="text-xs font-normal text-gray-500">(Optional)</span>
                         </label>
                         <textarea
                           value={submission.impression}
@@ -554,7 +558,7 @@ export default function PlayerView() {
                               [targetId]: { ...submission, impression: e.target.value },
                             })
                           }
-                          placeholder="🎄 What was your first impression of this person?"
+                          placeholder="🎄 What was your first impression of this person? (Optional - leave empty if you prefer)"
                           className="w-full px-4 py-3 border-3 border-red-300 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-200 focus:outline-none resize-none shadow-inner"
                           rows={4}
                         />
@@ -562,7 +566,7 @@ export default function PlayerView() {
 
                       <div className="mb-5">
                         <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                          <span>🌟</span> Reality
+                          <span>🌟</span> What You Want to Tell Them <span className="text-xs font-normal text-red-600">*</span>
                         </label>
                         <textarea
                           value={submission.reality}
@@ -572,9 +576,10 @@ export default function PlayerView() {
                               [targetId]: { ...submission, reality: e.target.value },
                             })
                           }
-                          placeholder="🎁 What is the reality of your relationship?"
+                          placeholder="🎁 What do you want to tell this person?"
                           className="w-full px-4 py-3 border-3 border-red-300 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-200 focus:outline-none resize-none shadow-inner"
                           rows={4}
+                          required
                         />
                       </div>
 
@@ -671,18 +676,20 @@ export default function PlayerView() {
                       </div>
                       
                       <div className="space-y-4">
-                        <div>
-                          <h4 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                            <span>💭</span> First Impression
-                          </h4>
-                          <p className="text-gray-800 bg-gradient-to-r from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 shadow-inner text-lg">
-                            {submission.impression}
-                          </p>
-                        </div>
+                        {submission.impression && submission.impression.trim() && (
+                          <div>
+                            <h4 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                              <span>💭</span> First Impression
+                            </h4>
+                            <p className="text-gray-800 bg-gradient-to-r from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 shadow-inner text-lg">
+                              {submission.impression}
+                            </p>
+                          </div>
+                        )}
                         
                         <div>
                           <h4 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                            <span>🌟</span> Reality
+                            <span>🌟</span> {submission.impression && submission.impression.trim() ? 'Reality' : 'What They Wanted to Tell You'}
                           </h4>
                           <p className="text-gray-800 bg-gradient-to-r from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 shadow-inner text-lg">
                             {submission.reality}
@@ -761,18 +768,20 @@ export default function PlayerView() {
                       </div>
                       
                       <div className="space-y-4">
-                        <div>
-                          <h4 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                            <span>💭</span> First Impression
-                          </h4>
-                          <p className="text-gray-800 bg-gradient-to-r from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 shadow-inner text-lg">
-                            {submission.impression}
-                          </p>
-                        </div>
+                        {submission.impression && submission.impression.trim() && (
+                          <div>
+                            <h4 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                              <span>💭</span> First Impression
+                            </h4>
+                            <p className="text-gray-800 bg-gradient-to-r from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 shadow-inner text-lg">
+                              {submission.impression}
+                            </p>
+                          </div>
+                        )}
                         
                         <div>
                           <h4 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                            <span>🌟</span> Reality
+                            <span>🌟</span> {submission.impression && submission.impression.trim() ? 'Reality' : 'What They Wanted to Tell You'}
                           </h4>
                           <p className="text-gray-800 bg-gradient-to-r from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 shadow-inner text-lg">
                             {submission.reality}

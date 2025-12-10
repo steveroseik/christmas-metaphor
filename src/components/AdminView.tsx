@@ -549,11 +549,13 @@ export default function AdminView() {
                                   From {isRevealed ? writer.data.name : 'Anonymous'}
                                 </p>
                                 <div className="space-y-2">
+                                  {submission.impression && submission.impression.trim() && (
+                                    <p className="text-sm text-gray-700">
+                                      <strong className="text-gray-800">💭 Impression:</strong> {submission.impression}
+                                    </p>
+                                  )}
                                   <p className="text-sm text-gray-700">
-                                    <strong className="text-gray-800">💭 Impression:</strong> {submission.impression}
-                                  </p>
-                                  <p className="text-sm text-gray-700">
-                                    <strong className="text-gray-800">🌟 Reality:</strong> {submission.reality}
+                                    <strong className="text-gray-800">🌟 {submission.impression && submission.impression.trim() ? 'Reality' : 'Message'}:</strong> {submission.reality}
                                   </p>
                                 </div>
                               </div>
