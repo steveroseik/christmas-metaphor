@@ -24,3 +24,5 @@ Create a 1200x630 PNG image with:
 - [Bannerbear](https://www.bannerbear.com) - Automated OG image generation
 
 Once you have the PNG file, place it at `/public/og-image.png` and it will automatically be used for social media sharing.
+
+
