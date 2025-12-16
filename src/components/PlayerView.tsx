@@ -420,7 +420,7 @@ export default function PlayerView() {
 
           <div className="mb-6 bg-white/80 rounded-xl p-4 border-2 border-red-200 shadow-md">
             <p className="font-semibold mb-4 text-center text-gray-700">💡 How it works:</p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-start sm:justify-center items-start sm:items-center">
               {/* Merry Picks Example */}
               <div className="flex items-center gap-3">
                 <button
