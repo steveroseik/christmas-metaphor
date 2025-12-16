@@ -101,8 +101,8 @@ export default function AdminView() {
           errorMsg += 'Suggested actions:\n';
           analysis.suggestions.forEach((suggestion, index) => {
             const actionText = suggestion.action === 'remove_avoid' 
-              ? `Remove avoid for ${suggestion.targetPlayerName}`
-              : `Add ${suggestion.targetPlayerName} to preferences`;
+              ? `Remove Skip this round for ${suggestion.targetPlayerName}`
+              : `Add ${suggestion.targetPlayerName} to Merry Picks`;
             errorMsg += `${index + 1}. ${suggestion.playerName}: ${actionText}\n`;
           });
         } else {
@@ -120,8 +120,8 @@ export default function AdminView() {
                 <ul className="list-disc list-inside space-y-1 text-sm">
                   {analysis.suggestions.map((suggestion, index) => {
                     const actionText = suggestion.action === 'remove_avoid' 
-                      ? `Remove avoid for "${suggestion.targetPlayerName}"`
-                      : `Add "${suggestion.targetPlayerName}" to preferences`;
+                      ? `Remove Skip this round for "${suggestion.targetPlayerName}"`
+                      : `Add "${suggestion.targetPlayerName}" to Merry Picks`;
                     return (
                       <li key={index} className="text-gray-700">
                         <span className="font-medium">{suggestion.playerName}</span>: {actionText}
@@ -251,15 +251,15 @@ export default function AdminView() {
                       <div className="grid grid-cols-2 gap-4 mb-4">
                         <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-xl border-2 border-green-300">
                           <p className="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-2">
-                            <span>⭐</span> Suggested Max Preferences:
+                            <span>⭐</span> Suggested Max Merry Picks:
                           </p>
                           <p className="text-3xl font-bold text-green-700">{optimal.maxPreferences}</p>
                         </div>
-                        <div className="bg-gradient-to-r from-red-50 to-red-100 p-4 rounded-xl border-2 border-red-300">
+                        <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl border-2 border-blue-300">
                           <p className="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-2">
-                            <span>❌</span> Suggested Max Avoids:
+                            <span>⏭️</span> Suggested Max Skip this round:
                           </p>
-                          <p className="text-3xl font-bold text-red-700">{optimal.maxAvoids}</p>
+                          <p className="text-3xl font-bold text-blue-700">{optimal.maxAvoids}</p>
                         </div>
                       </div>
                       <button
@@ -338,7 +338,7 @@ export default function AdminView() {
                   </div>
                   
                   <div className="flex items-center gap-4">
-                    <label className="font-semibold text-gray-700 w-48">Max Preferences (⭐):</label>
+                    <label className="font-semibold text-gray-700 w-48">Max Merry Picks (⭐):</label>
                     <input
                       type="number"
                       min="0"
@@ -347,11 +347,11 @@ export default function AdminView() {
                       onChange={(e) => setMaxPreferences(parseInt(e.target.value) || 1)}
                       className="w-20 px-3 py-2 border-3 border-red-300 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-200 focus:outline-none shadow-inner"
                     />
-                    <span className="text-sm text-gray-600">Max favourites per player</span>
+                    <span className="text-sm text-gray-600">Max Merry Picks per player (optional)</span>
                   </div>
                   
                   <div className="flex items-center gap-4">
-                    <label className="font-semibold text-gray-700 w-48">Max Avoids (❌):</label>
+                    <label className="font-semibold text-gray-700 w-48">Max Skip this round (⏭️):</label>
                     <input
                       type="number"
                       min="0"
@@ -360,7 +360,7 @@ export default function AdminView() {
                       onChange={(e) => setMaxAvoids(parseInt(e.target.value) || 1)}
                       className="w-20 px-3 py-2 border-3 border-red-300 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-200 focus:outline-none shadow-inner"
                     />
-                    <span className="text-sm text-gray-600">Max dislikes per player</span>
+                    <span className="text-sm text-gray-600">Max Skip this round per player (guaranteed)</span>
                   </div>
                   
                   <button
@@ -457,8 +457,8 @@ export default function AdminView() {
                           {player.data.name}
                         </p>
                         <div className="text-sm text-gray-700 mt-2 font-semibold">
-                          <span className="bg-green-100 px-3 py-1 rounded-lg border-2 border-green-300">⭐ {player.data.preferences.length} preferences</span>
-                          <span className="ml-3 bg-red-100 px-3 py-1 rounded-lg border-2 border-red-300">❌ {player.data.avoids.length} avoids</span>
+                          <span className="bg-green-100 px-3 py-1 rounded-lg border-2 border-green-300">⭐ {player.data.preferences.length} Merry Picks</span>
+                          <span className="ml-3 bg-blue-100 px-3 py-1 rounded-lg border-2 border-blue-300">⏭️ {player.data.avoids.length} Skip this round</span>
                           {player.data.assignments.length > 0 && (
                             <span className="ml-3 bg-blue-100 px-3 py-1 rounded-lg border-2 border-blue-300">📝 {player.data.assignments.length} assignments</span>
                           )}

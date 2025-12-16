@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useGame } from '../hooks/useGame';
-import { Star, X, Sparkles } from 'lucide-react';
+import { Star, Sparkles, SkipForward } from 'lucide-react';
 
 export default function PlayerView() {
   const {
@@ -136,7 +136,7 @@ export default function PlayerView() {
     
     // If trying to add and already at max, show alert
     if (!isCurrentlyStarred && localPreferences.length >= maxPreferences) {
-      alert(`You can only select up to ${maxPreferences} favourites. Please remove one first.`);
+      alert(`You can only select up to ${maxPreferences} Merry Picks. Please remove one first.`);
       return;
     }
     
@@ -163,7 +163,7 @@ export default function PlayerView() {
     
     // If trying to add and already at max, show alert
     if (!isCurrentlyBlocked && localAvoids.length >= maxAvoids) {
-      alert(`You can only select up to ${maxAvoids} avoids. Please remove one first.`);
+      alert(`You can only select up to ${maxAvoids} Skip this round. Please remove one first.`);
       return;
     }
     
@@ -387,14 +387,14 @@ export default function PlayerView() {
             <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-red-600 via-red-500 to-green-600 bg-clip-text text-transparent">
               Set Your Preferences
             </h1>
-            <p className="text-lg text-gray-700 font-medium">✨ Tell us who you know well and who you'd prefer not to write about ✨</p>
+            <p className="text-lg text-gray-700 font-medium">✨ Mark your Merry Picks (optional) and who to Skip this round ✨</p>
           </div>
 
           {/* Show current counts and limits */}
           <div className="mb-6 bg-gradient-to-r from-blue-50 to-green-50 border-3 border-blue-300 rounded-2xl p-5 shadow-lg">
             <div className="flex justify-center gap-6 text-sm">
               <div className="text-center">
-                <span className="font-semibold text-gray-700">⭐ Favourites:</span>
+                <span className="font-semibold text-gray-700">⭐ Merry Picks:</span>
                 <span className={`ml-2 font-bold ${
                   localPreferences.length >= (gameData?.config.maxPreferences || 10)
                     ? 'text-red-600'
@@ -402,16 +402,51 @@ export default function PlayerView() {
                 }`}>
                   {localPreferences.length} / {gameData?.config.maxPreferences || 10}
                 </span>
+                <p className="text-xs text-gray-500 mt-1">(Optional)</p>
               </div>
               <div className="text-center">
-                <span className="font-semibold text-gray-700">❌ Avoids:</span>
+                <span className="font-semibold text-gray-700">⏭️ Skip this round:</span>
                 <span className={`ml-2 font-bold ${
                   localAvoids.length >= (gameData?.config.maxAvoids || 5)
-                    ? 'text-red-600'
+                    ? 'text-blue-600'
                     : 'text-gray-600'
                 }`}>
                   {localAvoids.length} / {gameData?.config.maxAvoids || 5}
                 </span>
+                <p className="text-xs text-blue-600 mt-1 font-semibold">(Guaranteed skip)</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-6 bg-white/80 rounded-xl p-4 border-2 border-red-200 shadow-md">
+            <p className="font-semibold mb-4 text-center text-gray-700">💡 How it works:</p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              {/* Merry Picks Example */}
+              <div className="flex items-center gap-3">
+                <button
+                  className="p-3 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg"
+                  disabled
+                >
+                  <Star className="w-6 h-6 fill-current" />
+                </button>
+                <div className="text-left">
+                  <p className="text-green-700 font-semibold">Merry Picks</p>
+                  <p className="text-xs text-gray-600">Optional - helps matchmaking</p>
+                </div>
+              </div>
+              
+              {/* Skip this round Example */}
+              <div className="flex items-center gap-3">
+                <button
+                  className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg"
+                  disabled
+                >
+                  <SkipForward className="w-6 h-6" />
+                </button>
+                <div className="text-left">
+                  <p className="text-blue-700 font-semibold">Skip this round</p>
+                  <p className="text-xs text-gray-600">Guaranteed - you will NOT write about them</p>
+                </div>
               </div>
             </div>
           </div>
@@ -436,7 +471,7 @@ export default function PlayerView() {
                       isStarred
                         ? 'bg-gradient-to-r from-green-50 to-green-100 border-green-400'
                         : isBlocked
-                        ? 'bg-gradient-to-r from-red-50 to-red-100 border-red-400'
+                        ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-400'
                         : 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-300'
                     }`}
                   >
@@ -458,10 +493,10 @@ export default function PlayerView() {
                         }`}
                         title={
                           !canAddPreference && !isStarred
-                            ? `Maximum ${maxPreferences} favourites reached`
+                            ? `Maximum ${maxPreferences} Merry Picks reached`
                             : isStarred
-                            ? 'Remove from favourites'
-                            : 'I know them well'
+                            ? 'Remove from Merry Picks'
+                            : 'Add to Merry Picks (optional)'
                         }
                       >
                         <Star className={`w-6 h-6 ${isStarred ? 'fill-current' : ''}`} />
@@ -472,20 +507,20 @@ export default function PlayerView() {
                         disabled={!canAddAvoid && !isBlocked}
                         className={`p-3 rounded-xl transition-all transform hover:scale-110 ${
                           isBlocked
-                            ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg'
+                            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
                             : !canAddAvoid
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-gray-200 text-gray-600 hover:bg-red-200 shadow-md'
+                            : 'bg-gray-200 text-gray-600 hover:bg-blue-200 shadow-md'
                         }`}
                         title={
                           !canAddAvoid && !isBlocked
-                            ? `Maximum ${maxAvoids} avoids reached`
+                            ? `Maximum ${maxAvoids} Skip this round reached`
                             : isBlocked
-                            ? 'Remove from avoids'
-                            : "I'd rather not write about them"
+                            ? 'Remove from Skip this round'
+                            : "Skip this round (guaranteed to be skipped)"
                         }
                       >
-                        <X className="w-6 h-6" />
+                        <SkipForward className="w-6 h-6" />
                       </button>
                     </div>
                   </div>
@@ -496,12 +531,6 @@ export default function PlayerView() {
             {otherPlayers.length === 0 && (
               <p className="text-center text-gray-500 py-8 text-lg">⏳ No other players yet</p>
             )}
-          </div>
-
-          <div className="mt-6 text-center text-base text-gray-700 bg-white/80 rounded-xl p-4 border-2 border-red-200 shadow-md">
-            <p className="font-semibold mb-2">💡 How it works:</p>
-            <p className="text-green-700">⭐ Green = I know them well</p>
-            <p className="text-red-700">❌ Red = I'd rather not write about them</p>
           </div>
 
           {/* Leave Game Button */}
