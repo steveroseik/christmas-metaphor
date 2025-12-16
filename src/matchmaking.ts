@@ -17,7 +17,43 @@ export interface ConflictAnalysis {
 export function analyzeMatchmakingConflict(players: Player[], N: number): ConflictAnalysis {
   const suggestions: ConflictAnalysis['suggestions'] = [];
   
-  // Check each player's valid candidates
+  // First, check if any player is avoided by everyone (critical issue)
+  for (const targetPlayer of players) {
+    const playersWhoCanWriteAboutTarget = players.filter(
+      p => p.uid !== targetPlayer.uid && !p.data.avoids.includes(targetPlayer.uid)
+    );
+    
+    const shortfall = N - playersWhoCanWriteAboutTarget.length;
+    
+    if (shortfall > 0) {
+      // This player cannot receive enough assignments because too many people avoid them
+      // Find players who are avoiding this target
+      const playersAvoidingTarget = players.filter(
+        p => p.uid !== targetPlayer.uid && p.data.avoids.includes(targetPlayer.uid)
+      );
+      
+      // Suggest removing avoids, prioritizing players with fewer avoids themselves
+      // (to avoid creating new conflicts)
+      const sortedAvoiders = playersAvoidingTarget.sort((a, b) => {
+        const aAvoids = a.data.avoids.length;
+        const bAvoids = b.data.avoids.length;
+        return aAvoids - bAvoids; // Prefer players with fewer avoids
+      });
+      
+      // Suggest removing the minimum number of avoids needed
+      for (let i = 0; i < Math.min(shortfall, sortedAvoiders.length); i++) {
+        const writerPlayer = sortedAvoiders[i];
+        suggestions.push({
+          playerName: writerPlayer.data.name,
+          action: 'remove_avoid',
+          targetPlayerName: targetPlayer.data.name,
+          reason: `${targetPlayer.data.name} is avoided by ${playersAvoidingTarget.length} player(s) and can only receive ${playersWhoCanWriteAboutTarget.length} assignment(s) but needs ${N}. ${writerPlayer.data.name} should remove their avoid for ${targetPlayer.data.name}.`,
+        });
+      }
+    }
+  }
+  
+  // Check each player's valid candidates (as a writer)
   for (const player of players) {
     const validCandidates = players.filter(
       p => p.uid !== player.uid && !player.data.avoids.includes(p.uid)
@@ -116,7 +152,7 @@ export function runMatchmaking(players: Player[], N: number): Assignment[] | nul
     return null;
   }
 
-  // Check if each player has enough valid candidates
+  // Check if each player has enough valid candidates (as a writer)
   for (const player of players) {
     const validCandidates = players.filter(
       p => p.uid !== player.uid && !player.data.avoids.includes(p.uid)
@@ -124,6 +160,18 @@ export function runMatchmaking(players: Player[], N: number): Assignment[] | nul
     
     if (validCandidates.length < N) {
       console.error(`❌ Player ${player.data.name} (${player.uid}) has only ${validCandidates.length} valid candidates but needs ${N}`);
+      return null;
+    }
+  }
+
+  // Check if any player is avoided by everyone (cannot receive assignments as a target)
+  for (const targetPlayer of players) {
+    const playersWhoCanWriteAboutTarget = players.filter(
+      p => p.uid !== targetPlayer.uid && !p.data.avoids.includes(targetPlayer.uid)
+    );
+    
+    if (playersWhoCanWriteAboutTarget.length < N) {
+      console.error(`❌ Player ${targetPlayer.data.name} (${targetPlayer.uid}) is avoided by ${players.length - 1 - playersWhoCanWriteAboutTarget.length} player(s) and can only receive ${playersWhoCanWriteAboutTarget.length} assignment(s) but needs ${N}`);
       return null;
     }
   }

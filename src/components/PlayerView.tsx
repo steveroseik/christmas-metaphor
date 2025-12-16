@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGame } from '../hooks/useGame';
 import { Star, X, Sparkles } from 'lucide-react';
 
@@ -25,7 +25,8 @@ export default function PlayerView() {
   const [localPreferences, setLocalPreferences] = useState<string[]>([]);
   const [localAvoids, setLocalAvoids] = useState<string[]>([]);
   const [submissions, setSubmissions] = useState<Record<string, { impression: string; reality: string }>>({});
-
+  const previousWritingStatusRef = useRef<string | undefined>(undefined);
+  const initializedSubmissionsRef = useRef(false);
 
   // Load current player's preferences
   useEffect(() => {
@@ -39,13 +40,59 @@ export default function PlayerView() {
   }, [currentUserId, gameData?.status, players]);
 
   // Load current player's assignments and submissions
+  // Only initialize from Firestore when entering WRITING phase, then preserve local changes
   useEffect(() => {
     if (currentUserId && gameData?.status === 'WRITING') {
       const currentPlayer = players.find(p => p.uid === currentUserId);
       if (currentPlayer) {
-        setSubmissions({ ...currentPlayer.data.submissions });
+        const firestoreSubmissions = currentPlayer.data.submissions;
+        
+        // If we just entered WRITING phase, initialize from Firestore
+        if (previousWritingStatusRef.current !== 'WRITING') {
+          setSubmissions({ ...firestoreSubmissions });
+          initializedSubmissionsRef.current = true;
+        } else {
+          // We're already in WRITING phase - only update if Firestore has NEW submissions
+          // that don't exist in local state (meaning current player just submitted)
+          // Preserve all local unsaved changes
+          setSubmissions(prevSubmissions => {
+            const merged = { ...prevSubmissions };
+            
+            // Only add submissions from Firestore that don't exist in local state
+            // This handles the case where the current player submitted (their own submission)
+            // but preserves any local unsaved changes for other targets
+            Object.keys(firestoreSubmissions).forEach(targetId => {
+              const firestoreSubmission = firestoreSubmissions[targetId];
+              
+              // Only update if this target doesn't exist in local state
+              // OR if the local state matches what's in Firestore (was already saved)
+              // This prevents overwriting unsaved local changes
+              if (!prevSubmissions[targetId]) {
+                // New submission from Firestore - add it
+                merged[targetId] = {
+                  impression: firestoreSubmission.impression || '',
+                  reality: firestoreSubmission.reality || '',
+                };
+              } else if (prevSubmissions[targetId].reality === firestoreSubmission.reality) {
+                // Local matches Firestore (was saved) - sync to get any other updates
+                merged[targetId] = {
+                  impression: firestoreSubmission.impression || '',
+                  reality: firestoreSubmission.reality || '',
+                };
+              }
+              // Otherwise, keep local unsaved changes (user is typing)
+            });
+            
+            return merged;
+          });
+        }
       }
+    } else {
+      // Reset when leaving WRITING phase
+      initializedSubmissionsRef.current = false;
     }
+    
+    previousWritingStatusRef.current = gameData?.status;
   }, [currentUserId, gameData?.status, players]);
 
   const handleJoin = async () => {
