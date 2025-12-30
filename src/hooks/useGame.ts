@@ -557,6 +557,39 @@ export function useGame() {
     }
   };
 
+  // Generate dummy players for testing
+  const generateDummyPlayers = async (count: number = 50) => {
+    if (!isFirebaseConfigured || !db) {
+      throw new Error('Firebase is not configured');
+    }
+
+    try {
+      const batch = writeBatch(db);
+      const timestamp = Date.now();
+      
+      for (let i = 0; i < count; i++) {
+        const playerId = `dummy_${timestamp}_${i}`;
+        const playerDocRef = doc(db, PLAYERS_COLLECTION, playerId);
+        
+        const dummyPlayerData: PlayerData = {
+          name: `Test Player ${i + 1}`,
+          preferences: [],
+          avoids: [],
+          assignments: [],
+          submissions: {},
+        };
+        
+        batch.set(playerDocRef, dummyPlayerData);
+      }
+
+      await batch.commit();
+    } catch (err) {
+      console.error('Error generating dummy players:', err);
+      setError('Failed to generate dummy players');
+      throw err;
+    }
+  };
+
   return {
     gameData,
     players,
@@ -576,6 +609,7 @@ export function useGame() {
     removePlayer,
     kickPlayer,
     resetAssignments,
+    generateDummyPlayers,
   };
 }
 

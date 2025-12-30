@@ -17,6 +17,7 @@ export default function AdminView() {
     setCurrentReveal,
     kickPlayer,
     resetAssignments,
+    generateDummyPlayers,
   } = useGame();
 
   const [targetsPerPlayer, setTargetsPerPlayer] = useState(
@@ -32,6 +33,7 @@ export default function AdminView() {
   const [matchmakingError, setMatchmakingError] = useState<React.ReactNode | null>(null);
   const [kickingPlayerId, setKickingPlayerId] = useState<string | null>(null);
   const [isResettingAssignments, setIsResettingAssignments] = useState(false);
+  const [isGeneratingDummyPlayers, setIsGeneratingDummyPlayers] = useState(false);
 
   // Update local state when gameData changes
   useEffect(() => {
@@ -295,6 +297,31 @@ export default function AdminView() {
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                 <span className="text-3xl">🎮</span> Game Controls
               </h2>
+
+              {/* Testing Button */}
+              <div className="mb-4">
+                <button
+                  onClick={async () => {
+                    if (!confirm('Generate 50 dummy players for testing? This will add test players to the game.')) {
+                      return;
+                    }
+                    setIsGeneratingDummyPlayers(true);
+                    try {
+                      await generateDummyPlayers(50);
+                      alert('Successfully generated 50 dummy players!');
+                    } catch (err: any) {
+                      console.error('Error generating dummy players:', err);
+                      alert(err.message || 'Failed to generate dummy players');
+                    } finally {
+                      setIsGeneratingDummyPlayers(false);
+                    }
+                  }}
+                  disabled={isGeneratingDummyPlayers}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-bold hover:from-purple-700 hover:to-purple-800 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none mb-4"
+                >
+                  {isGeneratingDummyPlayers ? '⏳ Generating...' : '🧪 Generate 50 Dummy Players (Testing)'}
+                </button>
+              </div>
 
               {/* Reset Assignments Button */}
               {(currentStatus === 'WRITING' || currentStatus === 'REVEAL') && (

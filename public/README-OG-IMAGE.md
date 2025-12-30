@@ -26,3 +26,5 @@ Create a 1200x630 PNG image with:
 Once you have the PNG file, place it at `/public/og-image.png` and it will automatically be used for social media sharing.
 
 
+
+

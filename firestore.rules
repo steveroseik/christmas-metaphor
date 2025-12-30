@@ -14,8 +14,11 @@ service cloud.firestore {
         // Anyone authenticated can read all players
         allow read: if request.auth != null;
         
-        // Users can create their own player document
-        allow create: if request.auth != null && request.auth.uid == playerId;
+        // Allow creating player documents: users can create their own OR any document
+        // (needed for admin/testing to create dummy players with custom IDs)
+        // Note: This is permissive for the Christmas party use case where admin
+        // runs matchmaking and testing from client. For production, add stricter checks.
+        allow create: if request.auth != null;
         
         // Allow updates: users can update their own document OR any document
         // (needed for admin matchmaking to set assignments on any player)
